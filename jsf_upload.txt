@@ -1,0 +1,108 @@
+package com.test.controller;
+
+
+
+import javax.faces.bean.ManagedBean;
+import javax.faces.bean.ManagedProperty;
+import javax.servlet.http.Part;
+import java.io.IOException;
+import java.util.Scanner;
+
+/**
+ * Created by olli on 06.04.16.
+ */
+@ManagedBean
+public class FileHelperBean {
+
+    private Part file;
+    private String fileContent;
+
+    @ManagedProperty(value = "#{databaseHelperBean}")
+    private DatabaseHelperBean databaseHelperBean;
+
+
+    public FileHelperBean() {
+    }
+
+      public void upload() {
+    try {
+      fileContent = new Scanner(file.getInputStream())
+          .useDelimiter("\\A").next();
+    } catch (IOException e) {
+      // Error handling
+    }
+    databaseHelperBean.setFileContent(fileContent);
+
+  }
+
+    public DatabaseHelperBean getDatabaseHelperBean() {
+        return databaseHelperBean;
+    }
+
+    public void setDatabaseHelperBean(DatabaseHelperBean databaseHelperBean) {
+        this.databaseHelperBean = databaseHelperBean;
+    }
+
+    public Part getFile() {
+        return file;
+    }
+
+    public void setFile(Part file) {
+        this.file = file;
+    }
+
+    public String getFileContent() {
+        return fileContent;
+    }
+
+    public void setFileContent(String fileContent) {
+        this.fileContent = fileContent;
+    }
+}
+
+
+///////////////77777
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+      xmlns:f="http://xmlns.jcp.org/jsf/core">
+
+<h:form id="form" enctype="multipart/form-data">
+  <h:inputFile id="file" value="#{fileHelperBean.file}"/>
+  <h:commandButton value="Upload"
+      action="#{fileHelperBean.upload}"/>
+</h:form>
+</html>
+
+//////////////////////////////////////////7
+
+package com.test.controller;
+
+import javax.faces.bean.ApplicationScoped;
+import javax.faces.bean.ManagedBean;
+import javax.faces.bean.ManagedProperty;
+
+/**
+ * Created by olli on 06.04.16.
+ */
+@ManagedBean(name = "DatabaseHelperBean")
+@ApplicationScoped
+public class DatabaseHelperBean {
+
+    private String fileContent;
+
+    public DatabaseHelperBean() {
+    }
+
+    public String getFileContent() {
+        return fileContent;
+    }
+
+    public void setFileContent(String fileContent) {
+        this.fileContent = fileContent;
+    }
