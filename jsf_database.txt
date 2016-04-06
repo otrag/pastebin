@@ -1,0 +1,568 @@
+@ManagedBean
+public class Student {
+
+	private int id;
+	private String firstName;
+	private String lastName;
+	private String email;
+	
+	public Student() {
+	}
+	
+	public Student(int id, String firstName, String lastName, String email) {
+		this.id = id;
+		this.firstName = firstName;
+		this.lastName = lastName;
+		this.email = email;
+	}
+
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	public String getFirstName() {
+		return firstName;
+	}
+
+	public void setFirstName(String firstName) {
+		this.firstName = firstName;
+	}
+
+	public String getLastName() {
+		return lastName;
+	}
+
+	public void setLastName(String lastName) {
+		this.lastName = lastName;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	@Override
+	public String toString() {
+		return "Student [id=" + id + ", firstName=" + firstName + ", lastName="
+				+ lastName + ", email=" + email + "]";
+	}
+
+}
+
+
+
+//controller
+
+@ManagedBean
+@SessionScoped
+public class StudentController {
+
+	private List<Student> students;
+	private StudentDbUtil studentDbUtil;
+	private Logger logger = Logger.getLogger(getClass().getName());
+	
+	public StudentController() throws Exception {
+		students = new ArrayList<>();
+		
+		studentDbUtil = StudentDbUtil.getInstance();
+	}
+	
+	public List<Student> getStudents() {
+		return students;
+	}
+
+	public void loadStudents() {
+
+		logger.info("Loading students");
+		
+		students.clear();
+
+		try {
+			
+			// get all students from database
+			students = studentDbUtil.getStudents();
+			
+		} catch (Exception exc) {
+			// send this to server logs
+			logger.log(Level.SEVERE, "Error loading students", exc);
+			
+			// add error message for JSF page
+			addErrorMessage(exc);
+		}
+	}
+		
+	public String addStudent(Student theStudent) {
+
+		logger.info("Adding student: " + theStudent);
+
+		try {
+			
+			// add student to the database
+			studentDbUtil.addStudent(theStudent);
+			
+		} catch (Exception exc) {
+			// send this to server logs
+			logger.log(Level.SEVERE, "Error adding students", exc);
+			
+			// add error message for JSF page
+			addErrorMessage(exc);
+
+			return null;
+		}
+		
+		return "list-students?faces-redirect=true";
+	}
+
+	public String loadStudent(int studentId) {
+		
+		logger.info("loading student: " + studentId);
+		
+		try {
+			// get student from database
+			Student theStudent = studentDbUtil.getStudent(studentId);
+			
+			// put in the request attribute ... so we can use it on the form page
+			ExternalContext externalContext = FacesContext.getCurrentInstance().getExternalContext();		
+
+			Map<String, Object> requestMap = externalContext.getRequestMap();
+			requestMap.put("student", theStudent);	
+			
+		} catch (Exception exc) {
+			// send this to server logs
+			logger.log(Level.SEVERE, "Error loading student id:" + studentId, exc);
+			
+			// add error message for JSF page
+			addErrorMessage(exc);
+			
+			return null;
+		}
+				
+		return "update-student-form.xhtml";
+	}	
+	
+	public String updateStudent(Student theStudent) {
+
+		logger.info("updating student: " + theStudent);
+		
+		try {
+			
+			// update student in the database
+			studentDbUtil.updateStudent(theStudent);
+			
+		} catch (Exception exc) {
+			// send this to server logs
+			logger.log(Level.SEVERE, "Error updating student: " + theStudent, exc);
+			
+			// add error message for JSF page
+			addErrorMessage(exc);
+			
+			return null;
+		}
+		
+		return "list-students?faces-redirect=true";		
+	}
+	
+	public String deleteStudent(int studentId) {
+
+		logger.info("Deleting student id: " + studentId);
+		
+		try {
+
+			// delete the student from the database
+			studentDbUtil.deleteStudent(studentId);
+			
+		} catch (Exception exc) {
+			// send this to server logs
+			logger.log(Level.SEVERE, "Error deleting student id: " + studentId, exc);
+			
+			// add error message for JSF page
+			addErrorMessage(exc);
+			
+			return null;
+		}
+		
+		return "list-students";	
+	}	
+	
+	private void addErrorMessage(Exception exc) {
+		FacesMessage message = new FacesMessage("Error: " + exc.getMessage());
+		FacesContext.getCurrentInstance().addMessage(null, message);
+	}
+	
+}
+
+
+//util
+
+public class StudentDbUtil {
+
+	private static StudentDbUtil instance;
+	private DataSource dataSource;
+	private String jndiName = "java:comp/env/jdbc/student_tracker";
+	
+	public static StudentDbUtil getInstance() throws Exception {
+		if (instance == null) {
+			instance = new StudentDbUtil();
+		}
+		
+		return instance;
+	}
+	
+	private StudentDbUtil() throws Exception {		
+		dataSource = getDataSource();
+	}
+
+	private DataSource getDataSource() throws NamingException {
+		Context context = new InitialContext();
+		
+		DataSource theDataSource = (DataSource) context.lookup(jndiName);
+		
+		return theDataSource;
+	}
+		
+	public List<Student> getStudents() throws Exception {
+
+		List<Student> students = new ArrayList<>();
+
+		Connection myConn = null;
+		Statement myStmt = null;
+		ResultSet myRs = null;
+		
+		try {
+			myConn = getConnection();
+
+			String sql = "select * from student order by last_name";
+
+			myStmt = myConn.createStatement();
+
+			myRs = myStmt.executeQuery(sql);
+
+			// process result set
+			while (myRs.next()) {
+				
+				// retrieve data from result set row
+				int id = myRs.getInt("id");
+				String firstName = myRs.getString("first_name");
+				String lastName = myRs.getString("last_name");
+				String email = myRs.getString("email");
+
+				// create new student object
+				Student tempStudent = new Student(id, firstName, lastName,
+						email);
+
+				// add it to the list of students
+				students.add(tempStudent);
+			}
+			
+			return students;		
+		}
+		finally {
+			close (myConn, myStmt, myRs);
+		}
+	}
+
+	public void addStudent(Student theStudent) throws Exception {
+
+		Connection myConn = null;
+		PreparedStatement myStmt = null;
+
+		try {
+			myConn = getConnection();
+
+			String sql = "insert into student (first_name, last_name, email) values (?, ?, ?)";
+
+			myStmt = myConn.prepareStatement(sql);
+
+			// set params
+			myStmt.setString(1, theStudent.getFirstName());
+			myStmt.setString(2, theStudent.getLastName());
+			myStmt.setString(3, theStudent.getEmail());
+			
+			myStmt.execute();			
+		}
+		finally {
+			close (myConn, myStmt);
+		}
+		
+	}
+	
+	public Student getStudent(int studentId) throws Exception {
+	
+		Connection myConn = null;
+		PreparedStatement myStmt = null;
+		ResultSet myRs = null;
+		
+		try {
+			myConn = getConnection();
+
+			String sql = "select * from student where id=?";
+
+			myStmt = myConn.prepareStatement(sql);
+			
+			// set params
+			myStmt.setInt(1, studentId);
+			
+			myRs = myStmt.executeQuery();
+
+			Student theStudent = null;
+			
+			// retrieve data from result set row
+			if (myRs.next()) {
+				int id = myRs.getInt("id");
+				String firstName = myRs.getString("first_name");
+				String lastName = myRs.getString("last_name");
+				String email = myRs.getString("email");
+
+				theStudent = new Student(id, firstName, lastName,
+						email);
+			}
+			else {
+				throw new Exception("Could not find student id: " + studentId);
+			}
+
+			return theStudent;
+		}
+		finally {
+			close (myConn, myStmt, myRs);
+		}
+	}
+	
+	public void updateStudent(Student theStudent) throws Exception {
+
+		Connection myConn = null;
+		PreparedStatement myStmt = null;
+
+		try {
+			myConn = getConnection();
+
+			String sql = "update student "
+						+ " set first_name=?, last_name=?, email=?"
+						+ " where id=?";
+
+			myStmt = myConn.prepareStatement(sql);
+
+			// set params
+			myStmt.setString(1, theStudent.getFirstName());
+			myStmt.setString(2, theStudent.getLastName());
+			myStmt.setString(3, theStudent.getEmail());
+			myStmt.setInt(4, theStudent.getId());
+			
+			myStmt.execute();
+		}
+		finally {
+			close (myConn, myStmt);
+		}
+		
+	}
+	
+	public void deleteStudent(int studentId) throws Exception {
+
+		Connection myConn = null;
+		PreparedStatement myStmt = null;
+
+		try {
+			myConn = getConnection();
+
+			String sql = "delete from student where id=?";
+
+			myStmt = myConn.prepareStatement(sql);
+
+			// set params
+			myStmt.setInt(1, studentId);
+			
+			myStmt.execute();
+		}
+		finally {
+			close (myConn, myStmt);
+		}		
+	}	
+	
+	private Connection getConnection() throws Exception {
+
+		Connection theConn = dataSource.getConnection();
+		
+		return theConn;
+	}
+	
+	private void close(Connection theConn, Statement theStmt) {
+		close(theConn, theStmt, null);
+	}
+	
+	private void close(Connection theConn, Statement theStmt, ResultSet theRs) {
+
+		try {
+			if (theRs != null) {
+				theRs.close();
+			}
+
+			if (theStmt != null) {
+				theStmt.close();
+			}
+
+			if (theConn != null) {
+				theConn.close();
+			}
+			
+		} catch (Exception exc) {
+			exc.printStackTrace();
+		}
+	}	
+}
+
+//list students
+
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:h="http://xmlns.jcp.org/jsf/html"
+	xmlns:f="http://xmlns.jcp.org/jsf/core">
+
+<f:metadata>
+  <f:event type="preRenderView" listener="#{studentController.loadStudents()}"/>
+</f:metadata>
+
+<h:head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+	<title>Student Tracker App</title>
+	
+	<h:outputStylesheet library="css" name="style.css"  />
+	
+</h:head>
+
+<h:body>
+
+	<div id="wrapper">
+		<div id="header">
+			<h2>FooBar University</h2>
+		</div>
+	</div>
+
+	<div id="container">
+
+		<div id="content">
+		
+			<h:messages globalOnly="true" />
+		
+			<h:button value="Add Student" styleClass="add-student-button" outcome="add-student-form"/>			
+
+			<h:form>
+						
+			<h:dataTable value="#{studentController.students}" var="tempStudent"
+				styleClass="demo-table" 
+				headerClass="demo-table-header"
+				rowClasses="demo-table-odd-row,demo-table-even-row">
+
+				<h:column>
+					<!-- the column header -->
+					<f:facet name="header">First Name</f:facet>
+
+					<!--  the value for each row -->
+					#{tempStudent.firstName}
+				</h:column>
+
+				<h:column>
+					<!-- the column header -->
+					<f:facet name="header">Last Name</f:facet>
+
+					<!--  the value for each row -->
+					#{tempStudent.lastName}
+				</h:column>
+
+				<h:column>
+					<!-- the column header -->
+					<f:facet name="header">Email</f:facet>
+
+					<!--  the value for each row -->
+					#{tempStudent.email}
+				</h:column>
+
+				<h:column>
+					<!-- the column header -->
+					<f:facet name="header">Action</f:facet>
+
+					<!--  the value for each row -->
+					<h:commandLink value="Update"
+						action="#{studentController.loadStudent(tempStudent.id)}"/>
+					|
+
+					<h:commandLink value="Delete"
+						onclick="if (!confirm('Are you sure you want to delete this student?')) return false"
+						action="#{studentController.deleteStudent(tempStudent.id)}"/>
+					
+				</h:column>
+
+			</h:dataTable>
+
+			</h:form>
+
+		</div>
+		
+	</div>
+
+</h:body>
+</html>
+
+//addStudent Form
+
+
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:h="http://xmlns.jcp.org/jsf/html"
+	xmlns:f="http://xmlns.jcp.org/jsf/core">
+
+<h:head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+	<title>Add Student</title>
+	
+	<h:outputStylesheet library="css" name="style.css"  />
+	<h:outputStylesheet library="css" name="add-student-style.css"  />
+	
+</h:head>
+
+<h:body>
+
+	<div id="wrapper">
+		<div id="header">
+			<h2>FooBar University</h2>
+		</div>
+	</div>
+	
+	<div id="container">
+		<h3>Add Student</h3>
+
+		<h:messages globalOnly="true" />
+
+		<h:form id="form" style="margin-top: 10px;" >
+			<h:panelGrid columns="3">
+			
+				<h:outputLabel>First name:</h:outputLabel> <h:inputText value="#{student.firstName}" id="firstName" /> <h:message for="firstName" />
+	
+				<h:outputLabel>Last name:</h:outputLabel> <h:inputText value="#{student.lastName}" id="lastName" /> <h:message for="lastName" />
+	
+				<h:outputLabel>Email:</h:outputLabel> <h:inputText value="#{student.email}" id="email" 
+									required="true"
+            							requiredMessage="Your email is mandatory."/> 	<h:message for="email" />
+				
+				<h:outputLabel /> <h:commandButton value="Save" styleClass="save" action="#{studentController.addStudent(student)}"/>
+			
+			</h:panelGrid>
+		</h:form>
+
+		<div style="clear: both;"></div>
+
+		<p><h:outputLink value="list-students.xhtml">Back to List</h:outputLink></p>
+
+	</div>	
+</h:body>
+</html>
+

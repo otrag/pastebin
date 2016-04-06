@@ -1,0 +1,255 @@
+@WebServlet(name = "FlightDetails", urlPatterns = "/FlightDetails")
+public class FlightDetails extends HttpServlet {
+
+
+    //  @EJB(beanName = "FlightStateless")
+    private FlightLocalNew4 fsb;
+
+
+    //@EJB(beanName = "FlightStateful")
+    private FlightLocalNew4 fsbStatefull;
+
+
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+    }
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+        PrintWriter out = response.getWriter();
+
+        out.println("The Flight Details Servlet has been called");
+
+      /* get ejb through lookup
+        try{
+
+            Context context = new InitialContext();
+            Object fobj= context.lookup("java:global/LearnEJB2_war_exploded/FlightServiceStatelessBeanNew!com.airline.service.FlightServiceStatelessBeanNew");
+            fsb = (FlightServiceStatelessBeanNew) fobj;
+
+        }catch (NamingException e){
+            out.println("Naming excepton has occured when trying to lookup the FlightService EJB");
+            e.printStackTrace();
+
+        }*/
+
+        try {
+
+            Context context = new InitialContext();
+
+            Object fobj = context.lookup("java:global/LearnEJB2_war_exploded/FlightStateless!com.airline.service.FlightLocalNew4");
+
+            fsb = (FlightLocalNew4) fobj;
+
+            fobj = context.lookup("java:global/LearnEJB2_war_exploded/FlightStateful!com.airline.service.FlightLocalNew4");
+
+            fsbStatefull = (FlightLocalNew4) fobj;
+
+
+        } catch (NamingException e) {
+            System.out.println("Naming Exception has occured in the lookup of the EJB");
+            System.out.println(e.getStackTrace());
+
+        }
+
+        //Stateless
+
+        out.println("Stateless Bean: " + fsb.getFrom() + " to " + fsb.getTo());
+
+
+        //Statefull
+        out.println("Statefull Bean: " + fsbStatefull.getFrom() + " to " + fsbStatefull.getTo());
+
+
+    }
+}
+
+
+//Interface
+
+@Local
+public interface FlightLocalNew4 {
+
+
+    public Integer getId();
+
+    public void setId(Integer id);
+
+    public String getFrom();
+
+    public void setFrom(String from);
+
+    public String getTo();
+
+    public void setTo(String to);
+
+    public Integer getPrice();
+
+    public void setPrice(Integer price);
+
+    public Integer getNumOfSeats();
+
+    public void setNumOfSeats(Integer numOfSeats);
+
+    public String getAirplaneModel();
+
+    public void setAirplaneModel(String airplaneModel);
+
+    @Override
+    public String toString();
+}
+//statefull
+
+
+@Stateful(name = "FlightStateful")
+public class FlightServiceStatefulBeanNew implements FlightLocalNew4 {
+    private Integer id = 12122112;
+    private String from = "Los Angeles";
+    private String to = "London";
+    private Integer price = 400;
+    private Integer numOfSeats = 250;
+    private String airplaneModel ="Boing 787";
+
+
+    public FlightServiceStatefulBeanNew(){
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getFrom() {
+        return from;
+    }
+
+    public void setFrom(String from) {
+        this.from = from;
+    }
+
+    public String getTo() {
+        return to;
+    }
+
+    public void setTo(String to) {
+        this.to = to;
+    }
+
+    public Integer getPrice() {
+        return price;
+    }
+
+    public void setPrice(Integer price) {
+        this.price = price;
+    }
+
+    public Integer getNumOfSeats() {
+        return numOfSeats;
+    }
+
+    public void setNumOfSeats(Integer numOfSeats) {
+        this.numOfSeats = numOfSeats;
+    }
+
+    public String getAirplaneModel() {
+        return airplaneModel;
+    }
+
+    public void setAirplaneModel(String airplaneModel) {
+        this.airplaneModel = airplaneModel;
+    }
+
+    @Override
+    public String toString() {
+        return "FlightServiceStatelessBeanNew{" +
+                "id=" + id +
+                ", from='" + from + '\'' +
+                ", to='" + to + '\'' +
+                ", price=" + price +
+                ", numOfSeats=" + numOfSeats +
+                ", airplaneModel='" + airplaneModel + '\'' +
+                '}';
+    }
+}
+
+
+//stateless
+
+@Stateless(name = "FlightStateless")
+public class FlightServiceStatelessBeanNew implements FlightLocalNew4 {
+    private Integer id = 12122112;
+    private String from = "Los Angeles";
+    private String to = "London";
+    private Integer price = 400;
+    private Integer numOfSeats = 250;
+    private String airplaneModel ="Boing 787";
+
+
+    public FlightServiceStatelessBeanNew(){
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getFrom() {
+        return from;
+    }
+
+    public void setFrom(String from) {
+        this.from = from;
+    }
+
+    public String getTo() {
+        return to;
+    }
+
+    public void setTo(String to) {
+        this.to = to;
+    }
+
+    public Integer getPrice() {
+        return price;
+    }
+
+    public void setPrice(Integer price) {
+        this.price = price;
+    }
+
+    public Integer getNumOfSeats() {
+        return numOfSeats;
+    }
+
+    public void setNumOfSeats(Integer numOfSeats) {
+        this.numOfSeats = numOfSeats;
+    }
+
+    public String getAirplaneModel() {
+        return airplaneModel;
+    }
+
+    public void setAirplaneModel(String airplaneModel) {
+        this.airplaneModel = airplaneModel;
+    }
+
+    @Override
+    public String toString() {
+        return "FlightServiceStatelessBeanNew{" +
+                "id=" + id +
+                ", from='" + from + '\'' +
+                ", to='" + to + '\'' +
+                ", price=" + price +
+                ", numOfSeats=" + numOfSeats +
+                ", airplaneModel='" + airplaneModel + '\'' +
+                '}';
+    }
+}
+:wq
+

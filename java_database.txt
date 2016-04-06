@@ -1,0 +1,207 @@
+package smartetl;
+ 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+ 
+public class MysqlConnection {
+ 
+    private static MysqlConnection instance = null;
+    private static Connection conn = null;
+ 
+    // Hostname
+    private static String dbHost = "localhost";
+ 
+    // Port -- Standard: 3306
+    private static String dbPort = "3306";
+ 
+    // Datenbankname
+    private static String database = "smartmeetering";
+ 
+    // Datenbankuser
+    private static String dbUser = "root";
+ 
+    // Datenbankpasswort
+    private static String dbPassword = "gt66.z10";
+ 
+    private MysqlConnection() {
+        try {
+ 
+            // Datenbanktreiber für ODBC Schnittstellen laden.
+            // Für verschiedene ODBC-Datenbanken muss dieser Treiber
+            // nur einmal geladen werden.
+            Class.forName("com.mysql.jdbc.Driver");
+ 
+            // Verbindung zur ODBC-Datenbank 'sakila' herstellen.
+            // Es wird die JDBC-ODBC-Brücke verwendet.
+            conn = DriverManager.getConnection("jdbc:mysql://" + dbHost + ":"
+                    + dbPort + "/" + database + "?" + "user=" + dbUser + "&"
+                    + "password=" + dbPassword);
+        } catch (ClassNotFoundException e) {
+            System.out.println("Treiber nicht gefunden");
+        } catch (SQLException e) {
+        	e.printStackTrace();
+            System.out.println("Connect nicht moeglich");
+        }
+    }
+ 
+    public static MysqlConnection getInstance()
+    {
+        if(instance == null)
+            instance = new MysqlConnection();
+        return instance;
+    }
+ 
+    
+    public int writetoDB(String timestamp, String datum, int jahr, int monat, int tag, int stunde,
+    		int minute, int tarifID, float wert)
+    {
+        int result=0;
+ 
+        if(conn != null)
+        {
+            // Anfrage-Statement erzeugen.
+            Statement query;
+
+            try {
+                query = conn.createStatement();
+ 
+                String sql1="select * from Zeit where Timestamp='"+timestamp+"'";
+                String sql2="select * from Fakten where Zeit_Timestamp='"+timestamp+"' and Tarif_TarifID="
+                +tarifID+" and Kunde_Kundennummer=1";
+                String sql3 = "insert into Zeit (Timestamp,Datum,Jahr,Monat,Tag,Stunde,Minute) values('"
+                +timestamp+"','"+datum+"',"+jahr+","+monat+","+tag+","+stunde+","+minute+")";
+                String sql4 = "insert into Fakten (Zeit_Timestamp,Tarif_TarifID,Kunde_Kundennummer,Wert)" +
+                		" values('"+timestamp+"',"+tarifID+","+1+","+wert+")";
+                ResultSet test = query.executeQuery(sql1);
+                //Falls der Timestamp noch nicht vorhanden einfügen
+                if(!test.next()) result = query.executeUpdate(sql3);
+                test = query.executeQuery(sql2);
+                if(!test.next()) result = query.executeUpdate(sql4);
+               
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return result;
+    }
+}
+
+
+
+package smartetl;
+import java.io.FileInputStream;
+import java.util.Iterator;
+import java.util.Vector;
+import java.util.Date;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+
+import org.apache.poi.hssf.usermodel.HSSFCell;
+import org.apache.poi.hssf.usermodel.HSSFRow;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.poifs.filesystem.POIFSFileSystem;
+
+
+public class ReadEx {
+ 
+    public static void main( String [] args ) {
+    	
+        
+ 
+        //String fileName="/home/olli/nas/Projekte/swm/Daten/sm0308.xls";
+    	String fileName = args[0];
+        //Read an Excel File and Store in a Vector
+        Vector dataHolder=readExcelFile(fileName);
+        //Print the data read
+        transformtoMYSQL(dataHolder);
+    }
+    public static Vector readExcelFile(String fileName)
+    {
+        /** --Define a Vector
+            --Holds Vectors Of Cells
+         */
+        Vector cellVectorHolder = new Vector();
+ 
+        try{
+        /** Creating Input Stream**/
+        //InputStream myInput= ReadExcelFile.class.getResourceAsStream( fileName );
+        FileInputStream myInput = new FileInputStream(fileName);
+ 
+        /** Create a POIFSFileSystem object**/
+        POIFSFileSystem myFileSystem = new POIFSFileSystem(myInput);
+ 
+        /** Create a workbook using the File System**/
+         HSSFWorkbook myWorkBook = new HSSFWorkbook(myFileSystem);
+ 
+         /** Get the first sheet from workbook**/
+        HSSFSheet mySheet = myWorkBook.getSheetAt(0);
+ 
+        /** We now need something to iterate through the cells.**/
+          Iterator rowIter = mySheet.rowIterator(); 
+ 
+          while(rowIter.hasNext()){
+              HSSFRow myRow = (HSSFRow) rowIter.next();
+              Iterator cellIter = myRow.cellIterator();
+              Vector cellStoreVector=new Vector();
+              while(cellIter.hasNext()){
+                  HSSFCell myCell = (HSSFCell) cellIter.next();
+                  cellStoreVector.addElement(myCell);
+              }
+              cellVectorHolder.addElement(cellStoreVector);
+          }
+        }catch (Exception e){e.printStackTrace(); }
+        return cellVectorHolder;
+    }
+ 
+    private static void transformtoMYSQL(Vector dataHolder) {
+ 
+
+    		int rows=0;
+    	  	for (int i=5;i<101; i++){
+             Vector cellStoreVector=(Vector)dataHolder.elementAt(i);
+       
+             HSSFCell myCell = (HSSFCell)cellStoreVector.elementAt(0);
+           
+           
+           //Datum auslesen und in richtiges Format bringen, Feld ist in Originaltabelle leider vom Typ Text
+           String stringCellValue = myCell.toString();
+           String timestamp=stringCellValue.substring(6, 10)+"-"+stringCellValue.substring(3, 5)+"-"+
+           stringCellValue.substring(0, 2)+" "+stringCellValue.substring(11, 19);
+           String datum=timestamp.substring(0, 10);
+           int jahr=Integer.parseInt(datum.substring(0, 4));
+           int monat=Integer.parseInt(datum.substring(5, 7));
+           int tag=Integer.parseInt(datum.substring(8, 10));
+           int stunde=Integer.parseInt(timestamp.substring(11, 13));
+           int minute=Integer.parseInt(timestamp.substring(14, 16));
+           
+           
+           //Den Tarifwert setzen
+           int tarifID;
+           Calendar cal= new GregorianCalendar(jahr, monat-1, tag);
+           //Festellen ob Sonntag (1) oder Samstag(7)
+           if(cal.get(Calendar.DAY_OF_WEEK)==1 || cal.get(Calendar.DAY_OF_WEEK)==7) tarifID=3;
+           //tag und nacht tarif
+           else if(stunde>=8 && stunde<20) {
+        	   if(stunde==8 && minute==0)tarifID=2;
+        	   else tarifID=1;
+           }
+           else if(stunde==20 && minute==0) tarifID=1;
+           else tarifID=2;
+           
+           myCell = (HSSFCell)cellStoreVector.elementAt(2);
+           float wert = (float)myCell.getNumericCellValue();
+         
+           System.out.print(timestamp+"\t"+datum+"\t"+jahr+"\t"+monat+"\t"+tag+"\t"+stunde+"\t"+minute+"\t"+tarifID+"\t"+wert+"\t");
+
+           System.out.println(cal.get(Calendar.DAY_OF_WEEK));
+           rows=rows+MysqlConnection.getInstance().writetoDB(timestamp, datum, jahr, monat, tag, stunde, minute, tarifID, wert);
+   }
+    	  	System.out.println(rows+" rows affected");
+    }
+}^:wq
+:wq
+

@@ -1,0 +1,292 @@
+public class Flight {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Integer id;
+
+    @OneToOne(fetch=FetchType.LAZY)
+    @JoinColumn(name = "airplane_fk")
+    private Airplane airplaneDetails;
+
+
+    @OneToMany(mappedBy = "flightForPilot")
+    private List<Pilot> pilots;
+
+    public Airplane getAirplaneDetails() {
+        return airplaneDetails;
+    }
+
+    public void setAirplaneDetails(Airplane airplaneDetails) {
+        this.airplaneDetails = airplaneDetails;
+    }
+
+    @Enumerated(EnumType.STRING)
+    private FlightDestinations flightOrigin;
+
+    @Enumerated(EnumType.STRING)
+    private FlightDestinations flightDestination;
+
+    private Integer price;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date flightTime;
+
+    public Integer getId() {
+        return id;
+    }
+
+    public FlightDestinations getFlightOrigin() {
+        return flightOrigin;
+    }
+
+    public void setFlightOrigin(FlightDestinations flightOrigin) {
+        this.flightOrigin = flightOrigin;
+    }
+
+    public FlightDestinations getFlightDestination() {
+        return flightDestination;
+    }
+
+    public void setFlightDestination(FlightDestinations flightDestination) {
+        this.flightDestination = flightDestination;
+    }
+
+    public Integer getPrice() {
+        return price;
+    }
+
+    public void setPrice(Integer price) {
+        this.price = price;
+    }
+
+    public Date getFlightTime() {
+        return flightTime;
+    }
+
+    public void setFlightTime(Date flightTime) {
+        this.flightTime = flightTime;
+    }
+
+    public List<Pilot> getPilots() {
+        return pilots;
+    }
+
+    public void setPilots(List<Pilot> pilots) {
+        this.pilots = pilots;
+    }
+
+    @Override
+    public String toString() {
+        return "Flight{" +
+                "id=" + id +
+                ", airplaneDetails=" + airplaneDetails +
+                ", pilots=" + pilots +
+                ", flightOrigin=" + flightOrigin +
+                ", flightDestination=" + flightDestination +
+                ", price=" + price +
+                ", flightTime=" + flightTime +
+                '}';
+    }
+}
+
+
+//Pilot
+
+@Entity
+public class Pilot {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Integer id;
+
+    private String firstName;
+
+    private String lastName;
+
+    private Integer licenseNumber;
+
+    @Enumerated(EnumType.STRING)
+    private PilotRank pilotRank;
+
+    @ManyToOne
+    @JoinColumn(name = "flight_fk")
+    private Flight flightForPilot;
+
+    public Integer getId() {
+        return id;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public Integer getLicenseNumber() {
+        return licenseNumber;
+    }
+
+    public void setLicenseNumber(Integer licenseNumber) {
+        this.licenseNumber = licenseNumber;
+    }
+
+    public PilotRank getPilotRank() {
+        return pilotRank;
+    }
+
+    public void setPilotRank(PilotRank pilotRank) {
+        this.pilotRank = pilotRank;
+    }
+
+    public Flight getFlightForPilot() {
+        return flightForPilot;
+    }
+
+    public void setFlightForPilot(Flight flightForPilot) {
+        this.flightForPilot = flightForPilot;
+    }
+
+    @Override
+    public String toString() {
+        return "Pilot{" +
+                "id=" + id +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", licenseNumber=" + licenseNumber +
+                ", pilotRank=" + pilotRank +
+                ", flightForPilot=" + flightForPilot +
+                '}';
+    }
+}
+
+
+//airplane
+
+@Entity
+public class Airplane {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Integer id;
+
+    @OneToOne(mappedBy = "airplaneDetails")
+    private Flight flight;
+
+    private String planeMake;
+    private String modelName;
+    private Integer seatingCapacity;
+
+    public Integer getId() {
+        return id;
+    }
+
+    public String getPlaneMake() {
+        return planeMake;
+    }
+
+    public void setPlaneMake(String planeMake) {
+        this.planeMake = planeMake;
+    }
+
+    public String getModelName() {
+        return modelName;
+    }
+
+    public void setModelName(String modelName) {
+        this.modelName = modelName;
+    }
+
+    public Integer getSeatingCapacity() {
+        return seatingCapacity;
+    }
+
+    public void setSeatingCapacity(Integer seatingCapacity) {
+        this.seatingCapacity = seatingCapacity;
+    }
+
+    @Override
+    public String toString() {
+        return "Airplane{" +
+                "id=" + id +
+                ", planeMake='" + planeMake + '\'' +
+                ", modelName='" + modelName + '\'' +
+                ", seatingCapacity=" + seatingCapacity +
+                '}';
+    }
+}
+
+
+//addflight
+
+
+public class AddFlight extends HttpServlet {
+
+    @EJB
+    FlightServiceBean fsb;
+
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+    }
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+        Flight f = new Flight();
+        Airplane a = new Airplane();
+
+        f.setFlightOrigin(FlightDestinations.PARIS);
+        f.setFlightDestination(FlightDestinations.AMSTERDAM);
+        f.setPrice(400);
+
+        Calendar cal = Calendar.getInstance();
+
+        cal.set(Calendar.YEAR, 2014);
+        cal.set(Calendar.MONTH, 1);
+        cal.set(Calendar.DAY_OF_MONTH, 13);
+        cal.set(Calendar.HOUR_OF_DAY, 19);
+        cal.set(Calendar.MINUTE, 0);
+
+        Date d = cal.getTime();
+
+        f.setFlightTime(d);
+
+        a.setModelName("747");
+        a.setPlaneMake("Boing");
+        a.setSeatingCapacity(800);
+
+        f.setAirplaneDetails(a);
+
+
+        fsb.addFlight(f,a);
+
+
+
+//Bean
+
+@Stateless(name = "FlightServiceEJB")
+@LocalBean
+public class FlightServiceBean {
+
+    @PersistenceContext(unitName = "airline")
+    EntityManager em;
+
+    public FlightServiceBean() {
+    }
+
+    public void addFlight(Flight f, Airplane a){
+
+        em.persist(f);
+        em.persist(a);
+
+    }
+
+}

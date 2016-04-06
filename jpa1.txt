@@ -1,0 +1,120 @@
+@WebServlet(name = "AddPassenger",urlPatterns = "/AddPassenger")
+public class AddPassenger extends HttpServlet {
+
+    @EJB
+    PassengerServiceBean psb;
+
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+    }
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+        Passenger p = new Passenger();
+
+        p.setFirstName("John");
+        p.setLastName("Doe");
+
+        Calendar cal =Calendar.getInstance();
+        cal.set(Calendar.YEAR, 1982);
+        cal.set(Calendar.MONTH, 7);
+        cal.set(Calendar.DAY_OF_MONTH, 12);
+
+        Date dob = cal.getTime();
+
+        p.setDob(dob);
+
+        p.setGender(Gender.MALE);
+        p.setFlightClass(FlightClass.BUSINESS);
+
+        psb.addPassenger(p);
+
+    }
+}
+
+//bean
+
+@Stateless(name = "PassengerServiceEJB")
+@LocalBean
+public class PassengerServiceBean {
+
+    @PersistenceContext(unitName = "airline")
+    private EntityManager em;
+
+    public PassengerServiceBean() {
+    }
+
+    public void addPassenger(Passenger p){
+
+        em.persist(p);
+
+    }
+
+}
+
+//class
+
+@Entity
+public class Passenger {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Integer id;
+
+    private String firstName;
+    private String lastName;
+
+    @Temporal(TemporalType.DATE)
+    private Date dob;
+
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
+    @Enumerated(EnumType.STRING)
+    private FlightClass flightClass;
+
+
+    public Integer getId() {
+        return id;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public Date getDob() {
+        return dob;
+    }
+
+    public void setDob(Date dob) {
+        this.dob = dob;
+    }
+
+    public Gender getGender() {
+        return gender;
+    }
+
+    public void setGender(Gender gender) {
+        this.gender = gender;
+    }
+
+    public FlightClass getFlightClass() {
+        return flightClass;
+    }
+
+    public void setFlightClass(FlightClass flightClass) {
+        this.flightClass = flightClass;
+    }
+}

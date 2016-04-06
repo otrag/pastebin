@@ -1,0 +1,58 @@
+mport javax.faces.bean.ManagedBean;
+import javax.faces.model.SelectItem;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Created by olli on 06.04.16.
+ */
+@ManagedBean
+public class TourBean {
+
+    private List<SelectItem> options;
+    private String kindOfTour;
+
+    public TourBean() {
+        options = new ArrayList<>();
+        options.add(new SelectItem("City"));
+        options.add(new SelectItem("Country"));
+    }
+
+    public String decideTour(){
+
+        if(kindOfTour!= null && kindOfTour.equals("City")) return "city_response";
+        else return "country_response";
+    }
+
+
+
+
+    public List<SelectItem> getOptions() {
+        return options;
+    }
+
+    public void setOptions(List<SelectItem> options) {
+        this.options = options;
+    }
+
+    public String getKindOfTour() {
+        return kindOfTour;
+    }
+
+    public void setKindOfTour(String kindOfTour) {
+        this.kindOfTour = kindOfTour;
+    }
+}
+
+
+
+<h:body>
+   <h:form>
+      Choose Tour: <h:selectOneMenu value="#{tourBean.kindOfTour}">
+         <f:selectItems value="#{tourBean.options}"/>
+      </h:selectOneMenu>
+      <h:commandButton value="submit" action="#{tourBean.decideTour}"/>
+   </h:form>
+
+</h:body>
+</html>
