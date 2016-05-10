@@ -1,0 +1,32 @@
+public class Main {
+
+    public static void main(String[] args) {
+	// write your code here
+        String test = "\thallo";
+        String test2 = " hallo";
+        String test3 = "\rhallo";
+
+        Pattern p = Pattern.compile("\\s.*");
+
+        Pattern p2 = Pattern.compile("[ \t].*");
+        Matcher m = p.matcher(test);
+        Matcher m2 = p2.matcher(test);
+
+        System.out.println(test);
+        System.out.println("p1 matches: "+m.matches()+" p2 matches: "+m2.matches());
+
+        m = p.matcher(test2);
+        m2 = p2.matcher(test2);
+
+        System.out.println(test2);
+        System.out.println("p1 matches: "+m.matches()+"p2 matches: "+m2.matches());
+
+        m = p.matcher(test3);
+        m2 = p2.matcher(test3);
+
+        System.out.println(test3);
+        System.out.println("p1 matches: "+m.matches()+"p2 matches: "+m2.matches());
+
+
+    }
+}
